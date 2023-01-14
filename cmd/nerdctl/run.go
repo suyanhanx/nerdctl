@@ -42,6 +42,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/clientutil"
 	"github.com/containerd/nerdctl/pkg/cmd/container"
+	"github.com/containerd/nerdctl/pkg/cmd/image"
 	"github.com/containerd/nerdctl/pkg/defaults"
 	"github.com/containerd/nerdctl/pkg/errutil"
 	"github.com/containerd/nerdctl/pkg/idgen"
@@ -58,6 +59,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/strutil"
 	"github.com/containerd/nerdctl/pkg/taskutil"
 	dopts "github.com/docker/cli/opts"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -735,6 +737,42 @@ func createContainer(ctx context.Context, cmd *cobra.Command, client *containerd
 		return nil, gcContainer, err
 	}
 	return container, nil, nil
+}
+
+func processPullCommandFlagInRun(cmd *cobra.Command) (types.PullCommandOptions, error) {
+	verifier, err := cmd.Flags().GetString("verify")
+	if err != nil {
+		return types.PullCommandOptions{}, err
+	}
+	cosignKey, err := cmd.Flags().GetString("cosign-key")
+	if err != nil {
+		return types.PullCommandOptions{}, err
+	}
+	ipfsAddressStr, err := cmd.Flags().GetString("ipfs-address")
+	if err != nil {
+		return types.PullCommandOptions{}, err
+	}
+	return types.PullCommandOptions{
+		Verify:      verifier,
+		CosignKey:   cosignKey,
+		IPFSAddress: ipfsAddressStr,
+	}, nil
+}
+
+func ensureImage(ctx context.Context, cmd *cobra.Command, client *containerd.Client, globalOptions types.GlobalCommandOptions, rawRef string, ocispecPlatforms []v1.Platform, pull string, unpack *bool, quiet bool) (*imgutil.EnsuredImage, error) {
+	options, err := processPullCommandFlagInRun(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	options.GOptions = globalOptions
+
+	ensured, err := image.EnsureImage(ctx, client, rawRef, cmd.OutOrStdout(), cmd.ErrOrStderr(), options, ocispecPlatforms, "always", unpack, options.Quiet)
+	if err != nil {
+		return nil, err
+	}
+
+	return ensured, nil
 }
 
 func generateRootfsOpts(ctx context.Context, client *containerd.Client, platform string, cmd *cobra.Command, globalOptions types.GlobalCommandOptions, args []string, id string) ([]oci.SpecOpts, []containerd.NewContainerOpts, *imgutil.EnsuredImage, error) {

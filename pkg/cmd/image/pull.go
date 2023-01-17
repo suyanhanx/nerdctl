@@ -37,7 +37,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Pull(ctx context.Context, stdout io.Writer, stderr io.Writer, rawRef string, options types.PullCommandOptions) error {
+func Pull(ctx context.Context, rawRef string, stdout io.Writer, stderr io.Writer, options types.PullCommandOptions) error {
 	client, ctx, cancel, err := clientutil.NewClient(ctx, options.GOptions.Namespace, options.GOptions.Address)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func Pull(ctx context.Context, stdout io.Writer, stderr io.Writer, rawRef string
 		return err
 	}
 
-	_, err = EnsureImage(ctx, client, stdout, stderr, rawRef, options, ocispecPlatforms, "always", unpack, options.Quiet)
+	_, err = EnsureImage(ctx, client, rawRef, stdout, stderr, options, ocispecPlatforms, "always", unpack, options.Quiet)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func Pull(ctx context.Context, stdout io.Writer, stderr io.Writer, rawRef string
 	return nil
 }
 
-func EnsureImage(ctx context.Context, client *containerd.Client, stdout io.Writer, stderr io.Writer, rawRef string, options types.PullCommandOptions, ocispecPlatforms []v1.Platform, pull string, unpack *bool, quiet bool) (*imgutil.EnsuredImage, error) {
+func EnsureImage(ctx context.Context, client *containerd.Client, rawRef string, stdout io.Writer, stderr io.Writer, options types.PullCommandOptions, ocispecPlatforms []v1.Platform, pull string, unpack *bool, quiet bool) (*imgutil.EnsuredImage, error) {
 
 	var ensured *imgutil.EnsuredImage
 

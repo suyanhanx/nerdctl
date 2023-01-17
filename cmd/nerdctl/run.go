@@ -42,11 +42,13 @@ import (
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/clientutil"
 	"github.com/containerd/nerdctl/pkg/cmd/container"
+	"github.com/containerd/nerdctl/pkg/cosignutil"
 	"github.com/containerd/nerdctl/pkg/defaults"
 	"github.com/containerd/nerdctl/pkg/errutil"
 	"github.com/containerd/nerdctl/pkg/idgen"
 	"github.com/containerd/nerdctl/pkg/imgutil"
 	"github.com/containerd/nerdctl/pkg/inspecttypes/dockercompat"
+	"github.com/containerd/nerdctl/pkg/ipfs"
 	"github.com/containerd/nerdctl/pkg/labels"
 	"github.com/containerd/nerdctl/pkg/logging"
 	"github.com/containerd/nerdctl/pkg/mountutil"
@@ -58,6 +60,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/strutil"
 	"github.com/containerd/nerdctl/pkg/taskutil"
 	dopts "github.com/docker/cli/opts"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -735,6 +738,79 @@ func createContainer(ctx context.Context, cmd *cobra.Command, client *containerd
 		return nil, gcContainer, err
 	}
 	return container, nil, nil
+}
+
+// TODO This function is copied from /cmd/pull, need to be refactored.
+func ensureImage(ctx context.Context, cmd *cobra.Command, client *containerd.Client, globalOptions types.GlobalCommandOptions, rawRef string, ocispecPlatforms []v1.Platform, pull string, unpack *bool, quiet bool) (*imgutil.EnsuredImage, error) {
+
+	var ensured *imgutil.EnsuredImage
+
+	verifier, err := cmd.Flags().GetString("verify")
+	if err != nil {
+		return nil, err
+	}
+
+	if scheme, ref, err := referenceutil.ParseIPFSRefWithScheme(rawRef); err == nil {
+		if verifier != "none" {
+			return nil, errors.New("--verify flag is not supported on IPFS as of now")
+		}
+
+		ipfsAddressStr, err := cmd.Flags().GetString("ipfs-address")
+		if err != nil {
+			return nil, err
+		}
+
+		var ipfsPath *string
+		if ipfsAddressStr != "" {
+			dir, err := os.MkdirTemp("", "apidirtmp")
+			if err != nil {
+				return nil, err
+			}
+			defer os.RemoveAll(dir)
+			if err := os.WriteFile(filepath.Join(dir, "api"), []byte(ipfsAddressStr), 0600); err != nil {
+				return nil, err
+			}
+			ipfsPath = &dir
+		}
+
+		ensured, err = ipfs.EnsureImage(ctx, client, cmd.OutOrStdout(), cmd.ErrOrStderr(), globalOptions.Snapshotter, scheme, ref,
+			pull, ocispecPlatforms, unpack, quiet, ipfsPath)
+		if err != nil {
+			return nil, err
+		}
+		return ensured, nil
+	}
+
+	ref := rawRef
+	switch verifier {
+	case "cosign":
+		experimental := globalOptions.Experimental
+
+		if !experimental {
+			return nil, fmt.Errorf("cosign only work with enable experimental feature")
+		}
+
+		keyRef, err := cmd.Flags().GetString("cosign-key")
+		if err != nil {
+			return nil, err
+		}
+
+		ref, err = cosignutil.VerifyCosign(ctx, rawRef, keyRef, globalOptions.HostsDir)
+		if err != nil {
+			return nil, err
+		}
+	case "none":
+		logrus.Debugf("verification process skipped")
+	default:
+		return nil, fmt.Errorf("no verifier found: %s", verifier)
+	}
+
+	ensured, err = imgutil.EnsureImage(ctx, client, cmd.OutOrStdout(), cmd.ErrOrStderr(), globalOptions.Snapshotter, ref,
+		pull, globalOptions.InsecureRegistry, globalOptions.HostsDir, ocispecPlatforms, unpack, quiet)
+	if err != nil {
+		return nil, err
+	}
+	return ensured, err
 }
 
 func generateRootfsOpts(ctx context.Context, client *containerd.Client, platform string, cmd *cobra.Command, globalOptions types.GlobalCommandOptions, args []string, id string) ([]oci.SpecOpts, []containerd.NewContainerOpts, *imgutil.EnsuredImage, error) {

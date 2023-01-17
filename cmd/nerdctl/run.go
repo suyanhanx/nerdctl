@@ -767,7 +767,7 @@ func ensureImage(ctx context.Context, cmd *cobra.Command, client *containerd.Cli
 
 	options.GOptions = globalOptions
 
-	ensured, err := image.EnsureImage(ctx, client, rawRef, cmd.OutOrStdout(), cmd.ErrOrStderr(), options, ocispecPlatforms, "always", unpack, options.Quiet)
+	ensured, err := image.EnsureImage(ctx, client, rawRef, cmd.OutOrStdout(), cmd.ErrOrStderr(), options, ocispecPlatforms, pull, unpack, quiet)
 	if err != nil {
 		return nil, err
 	}

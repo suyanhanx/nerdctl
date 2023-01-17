@@ -102,7 +102,6 @@ func processPullCommandFlags(cmd *cobra.Command) (types.PullCommandOptions, erro
 		CosignKey:    cosignKey,
 		IPFSAddress:  ipfsAddressStr,
 	}, nil
-
 }
 
 func pullAction(cmd *cobra.Command, args []string) error {
@@ -111,5 +110,5 @@ func pullAction(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return image.Pull(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), args[0], pullOptions)
+	return image.Pull(cmd.Context(), args[0], cmd.OutOrStdout(), cmd.ErrOrStderr(), pullOptions)
 }

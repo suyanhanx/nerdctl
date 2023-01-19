@@ -19,7 +19,6 @@ package container
 import (
 	"context"
 	"fmt"
-	"github.com/containerd/containerd/oci"
 	"io"
 	"os"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/containerd/containerd/cmd/ctr/commands"
 	"github.com/containerd/containerd/cmd/ctr/commands/tasks"
 	"github.com/containerd/containerd/containers"
+	"github.com/containerd/containerd/oci"
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/clientutil"
 	"github.com/containerd/nerdctl/pkg/containerutil"

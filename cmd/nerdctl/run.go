@@ -43,6 +43,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/clientutil"
 	"github.com/containerd/nerdctl/pkg/cmd/container"
 	"github.com/containerd/nerdctl/pkg/cmd/image"
+	"github.com/containerd/nerdctl/pkg/containerutil"
 	"github.com/containerd/nerdctl/pkg/defaults"
 	"github.com/containerd/nerdctl/pkg/errutil"
 	"github.com/containerd/nerdctl/pkg/idgen"
@@ -482,7 +483,7 @@ func createContainer(ctx context.Context, cmd *cobra.Command, client *containerd
 	if err != nil {
 		return nil, nil, err
 	}
-	envs, err := generateEnvs(envFile, env)
+	envs, err := containerutil.GenerateEnvs(envFile, env)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1309,7 +1310,7 @@ func generateSharingPIDOpts(ctx context.Context, targetCon containerd.Container)
 	return opts, nil
 }
 
-// generateEnvs combines environment variables from `--env-file` and `--env`.
+// combines environment variables from `--env-file` and `--env`.
 // Pass an empty slice if any arg is not used.
 func generateEnvs(envFile []string, env []string) ([]string, error) {
 	var envs []string

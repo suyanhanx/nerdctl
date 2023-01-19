@@ -14,13 +14,24 @@
    limitations under the License.
 */
 
-package main
+package types
 
-import (
-	"github.com/opencontainers/runtime-spec/specs-go"
-)
-
-func setExecCapabilities(pspec *specs.Process) error {
-	//no op freebsd
-	return nil
+type ExecCommandOptions struct {
+	GOptions GlobalCommandOptions
+	// Allocate a pseudo-TTY
+	TTY bool
+	// Keep STDIN open even if not attached
+	Interactive bool
+	// Detached mode: run command in the background
+	Detach bool
+	// Working directory inside the container
+	Workdir string
+	// Set environment variables
+	Env []string
+	// Set environment variables from file
+	EnvFile []string
+	// Give extended privileges to the command
+	Privileged bool
+	// Username or UID (format: <name|uid>[:<group|gid>])
+	User string
 }

@@ -86,6 +86,7 @@ jobs:
     env:
       UBUNTU_VERSION: "${{ matrix.ubuntu }}"
       CONTAINERD_VERSION: "${{ matrix.containerd }}"
+      FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v3.3.0
         with:
@@ -139,6 +140,7 @@ jobs:
       UBUNTU_VERSION: "${{ matrix.ubuntu }}"
       CONTAINERD_VERSION: "${{ matrix.containerd }}"
       TEST_TARGET: "${{ matrix.target }}"
+      FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v3.3.0
         with:

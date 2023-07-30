@@ -27,8 +27,7 @@ func TestRemoveImage(t *testing.T) {
 	tID := testutil.Identifier(t)
 	base.Cmd("image", "prune", "--force", "--all").AssertOK()
 
-	// ignore error
-	base.Cmd("rmi", "-f", tID).AssertOK()
+	base.Cmd("rmi", "-f", tID).AssertFail()
 
 	base.Cmd("run", "--name", tID, testutil.CommonImage).AssertOK()
 	defer base.Cmd("rm", "-f", tID).AssertOK()

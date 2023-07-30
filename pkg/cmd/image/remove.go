@@ -93,12 +93,9 @@ func Remove(ctx context.Context, client *containerd.Client, args []string, optio
 	}
 
 	var errs []string
-	var fatalErr bool
 	for _, req := range args {
 		n, err := walker.Walk(ctx, req)
-		if err != nil {
-			fatalErr = true
-		}
+
 		if err == nil && n == 0 {
 			err = fmt.Errorf("no such image: %s", req)
 		}
@@ -109,10 +106,7 @@ func Remove(ctx context.Context, client *containerd.Client, args []string, optio
 
 	if len(errs) > 0 {
 		msg := fmt.Sprintf("%d errors:\n%s", len(errs), strings.Join(errs, "\n"))
-		if !options.Force || fatalErr {
-			return errors.New(msg)
-		}
-		logrus.Error(msg)
+		return errors.New(msg)
 	}
 	return nil
 }
